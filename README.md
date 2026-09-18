@@ -1,114 +1,158 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🚀 Kata FullStack — Technical Assessment Platform
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Plataforma de evaluación técnica que permite crear assessments, registrar preguntas de programación con casos de prueba, resolver ejercicios y calificar automáticamente el código enviado por el candidato.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🛠️ Stack
 
-## Description
+| Capa | Tecnología |
+|---|---|
+| 🔧 Backend | NestJS (Node.js 24) |
+| 🎨 Frontend | Angular 21 |
+| 🗄️ Base de datos | PostgreSQL 16 |
+| 🐳 Ejecución de código | Docker |
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🏗️ Arquitectura
 
-## Project setup
+Backend implementado con **arquitectura hexagonal (ports & adapters)**:
 
-```bash
-$ npm install
+```
+src/
+  <dominio>/
+    domain/
+      entities/        → clases puras, sin decoradores de framework
+      ports/            → interfaces (contratos) que el dominio expone
+    application/
+      use-cases/        → orquestan lógica de negocio usando los puertos
+    infrastructure/
+      persistence/      → entidades ORM + repositorios (implementan los puertos)
+      controller/        → controladores HTTP (adaptadores de entrada)
+      execution/          → adapter de ejecución de código (Docker)
 ```
 
-## Compile and run the project
+Módulos independientes: `assessments`, `questions`, `submissions`, `execution`. El dominio no conoce TypeORM ni Nest — solo interfaces (`*.repository.port.ts`, `code-executor.port.ts`).
+
+## 🗂️ Modelo de datos
+
+- 📋 **assessments**: evaluaciones técnicas (nombre, descripción, duración)
+- ❓ **questions**: ejercicios de programación (título, descripción, lenguajes permitidos, puntaje)
+- ✅ **test_cases**: casos de prueba de cada pregunta (input, output esperado, visible/oculto)
+- 🔗 **assessment_questions**: relación N:N — qué preguntas componen cada assessment, con orden
+- 📤 **submissions**: respuestas del candidato (código, lenguaje, resultados por test case, score, jsonb)
+
+## ⚙️ Requisitos previos
+
+- Node.js 24
+- Docker Desktop (para Postgres y para el motor de ejecución de código)
+
+## ▶️ Cómo correr el proyecto
+
+### 1️⃣ Base de datos
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+docker compose up -d
 ```
 
-## Run tests
+Levanta Postgres en el puerto configurado (`5433` por defecto si `5432` ya estaba ocupado localmente — ver `docker-compose.yml`).
+
+### 2️⃣ Backend
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+cd kata-backend
+npm install
+npm run start:dev
 ```
 
-## Deployment
+Variables de entorno (`.env`):
+```
+DB_HOST=localhost
+DB_PORT=5433
+DB_USER=kata
+DB_PASSWORD=******
+DB_NAME=kata_db
+```
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+`synchronize: true` está activo en desarrollo — las tablas se crean automáticamente desde las entidades ORM al levantar el backend.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 3️⃣ Imágenes Docker del motor de ejecución (opcional, pre-descarga)
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+docker pull node:24-alpine
+docker pull python:3.12-alpine
+docker pull eclipse-temurin:21-jdk-alpine
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Si no se pre-descargan, se descargan automáticamente en el primer uso de cada lenguaje.
 
-## Observability
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+### 4️⃣ Seed de datos de ejemplo (opcional)
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+Ejecuta (con Postgres levantado y las tablas ya creadas — corre el backend una vez con `npm run start:dev` antes):
+```bash
+npm run seed
+```
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+Esto crea 2 assessments, 5 preguntas con test cases (incluyendo casos ocultos) y las vincula entre sí, listo para probar el flujo completo desde Postman o el frontend.
 
-## Resources
+### 5️⃣ Frontend
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+cd kata-frontend
+npm install
+npm start
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## 🌐 Endpoints principales
 
-## Support
+| Método | Ruta | Descripción |
+|---|---|---|
+| 🟢 POST | `/assessments` | Crea un assessment (opcionalmente con `questionIds`) |
+| 🔵 GET | `/assessments` | Lista assessments |
+| 🔵 GET | `/assessments/:id` | Detalle de un assessment con sus preguntas |
+| 🟢 POST | `/assessments/:id/questions` | Vincula preguntas existentes a un assessment |
+| 🔵 GET | `/assessments/:id/results` | Resultados agregados del assessment |
+| 🟢 POST | `/questions` | Crea una pregunta con sus test cases |
+| 🔵 GET | `/questions` | Lista preguntas |
+| 🔵 GET | `/questions/:id` | Detalle de una pregunta |
+| 🟢 POST | `/run` | Ejecuta código libremente, sin calificar |
+| 🟢 POST | `/submissions` | Envía respuesta de una pregunta y la califica |
+| 🔵 GET | `/submissions/:id` | Detalle de una submission |
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 🐳 Motor de ejecución de código
 
-## Stay in touch
+Cada envío de código corre en un **contenedor Docker efímero y aislado**, uno por lenguaje soportado (☕ Java, 🟨 JavaScript, 🐍 Python; TypeScript: 🔷). El flujo:
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+1. 📝 El código y el input del test case se escriben en un directorio temporal del host
+2. 📦 Se levanta un contenedor con ese directorio montado como solo lectura
+3. ⏱️ Se ejecuta con timeout; si excede el límite, el contenedor se mata
+4. 🧹 Se captura `stdout`/`stderr`/`exitCode`, se parsea si hubo error de compilación (línea + mensaje), y se limpia todo (contenedor + archivos temporales)
 
-## License
+### 🔒 Controles de seguridad implementados
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+| Control | Mecanismo |
+|---|---|
+| 🧱 Aislamiento de ejecución | Contenedor Docker efímero (`--rm`) por cada ejecución, filesystem `--read-only` |
+| 🚫 Restricciones de acceso | `--network none` — sin acceso a red/internet desde el código ejecutado |
+| 🛡️ Manejo seguro de entradas | Input pasado por stdin (no interpolado en shell), errores de parseo capturados sin afectar el proceso principal |
+| ☠️ Prevención de ejecución maliciosa | `--pids-limit=64` (previene fork bombs), sin acceso a variables de entorno del host |
+| 📊 Control de consumo de recursos | `--memory=128m`, `--cpus=0.5`, timeout de 8s con `docker kill` forzado |
+
+## 🏆 Calificación automática
+
+Por cada `submission`, se ejecutan todos los test cases de la pregunta correspondiente, comparando `stdout` contra el `expectedOutput` de cada uno. El score se calcula proporcionalmente a los casos exitosos sobre el total, ponderado por los puntos de la pregunta.
+
+## ☁️ Despliegue en AWS (no implementado — diseño propuesto)
+
+| Componente | Servicio AWS |
+|---|---|
+| 🔧 Backend (NestJS) | ECS Fargate |
+| 🎨 Frontend (Angular) | S3 + CloudFront |
+| 🗄️ Base de datos | RDS PostgreSQL (Multi-AZ) |
+| 🐳 Motor de ejecución | Tareas Fargate efímeras por ejecución, o Lambda + Firecracker para mayor aislamiento |
+| 🔑 Secrets (credenciales DB) | AWS Secrets Manager |
+| 📜 Logs | CloudWatch Logs |
+
+Modelo de datos relacional
+
+## 🔐 Seguridad del repositorio
+
+- 🧪 Datos de prueba simulados en todos los ejemplos y seeds

@@ -83,7 +83,7 @@ export class DockerCodeExecutorAdapter implements CodeExecutorPort {
             return {
                 stdout: err.stdout ?? '',
                 stderr,
-                exitCode: err.code ?? 1,
+                exitCode: typeof err.code === 'number' ? err.code : 1,
                 timedOut,
                 compilation: timedOut
                     ? { success: false, message: 'Tiempo de ejecución excedido' }
