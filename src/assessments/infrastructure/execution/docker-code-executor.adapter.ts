@@ -21,7 +21,7 @@ const LANG_CONFIG: Record<string, LangConfig> = {
     java: {
         image: 'eclipse-temurin:21-jdk-alpine',
         fileName: 'Main.java',
-        runCmd: () => `sh -c "javac Main.java && java Main"`,
+        runCmd: () => `sh -c "javac -d /tmp Main.java && java -cp /tmp Main"`,
     },
     typescript: {
         image: 'node:24-alpine',
@@ -130,7 +130,6 @@ export class DockerCodeExecutorAdapter implements CodeExecutorPort {
             }
         }
 
-        // No matcheó patrón de compilación conocido -> se asume error de runtime, no de compilación
         return { success: true };
     }
 
