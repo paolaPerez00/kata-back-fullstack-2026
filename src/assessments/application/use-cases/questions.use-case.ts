@@ -1,7 +1,7 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { QUESTION_REPOSITORY, type QuestionRepositoryPort } from '../../domain/ports/question.repository.port';
 import { TEST_CASE_REPOSITORY, type TestCaseRepositoryPort } from '../../domain/ports/test-case.repository.port';
-import { Question, QuestionBody, SupportedLanguage } from '../../domain/entities/question.entity';
+import { Question, QuestionBody } from '../../domain/entities/question.entity';
 import { randomUUID } from 'crypto';
 import { TestCase } from '../../domain/entities/test-case.entity';
 
@@ -13,7 +13,13 @@ export class QuestionUseCase {
     ) { }
 
     async saveQuestion(body: QuestionBody): Promise<Question> {
-        const { title, description, allowedLanguages, points, testCases } = body;
+        const { title, description, allowedLanguages, points, testCases } = body ?? ({} as QuestionBody);
+        if (!title || !description || !Array.isArray(allowedLanguages) || allowedLanguages.length === 0 || typeof points !== 'number') {
+            throw new BadRequestException('title, description, allowedLanguages and points are required');
+        }
+        if (!Array.isArray(testCases) || testCases.length === 0) {
+            throw new BadRequestException('testCases must be a non-empty array');
+        }
         const question = new Question(randomUUID(), title, description, allowedLanguages, points);
         const saved = await this.questionPort.save(question);
 

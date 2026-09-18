@@ -6,4 +6,6 @@ export interface AssessmentRepositoryPort {
     save(assessment: Assessment): Promise<Assessment>;
     findById(id: string): Promise<Assessment | null>;
     findAll(): Promise<Assessment[]>;
+    linkQuestions(assessmentId: string, questionIds: string[]): Promise<void>;
+    findQuestionIdsByAssessment(assessmentId: string): Promise<string[]>;
 }

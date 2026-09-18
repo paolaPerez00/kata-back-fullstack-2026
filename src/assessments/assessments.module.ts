@@ -1,17 +1,25 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AssessmentOrmEntity } from './infrastructure/persistence/assessment.orm-entity';
+import { AssessmentQuestionOrmEntity } from './infrastructure/persistence/assessment-question.orm-entity';
 import { AssessmentPostgresRepository } from './infrastructure/persistence/assessment-postgres.repository';
 import { ASSESSMENT_REPOSITORY } from './domain/ports/assessment.repository.port';
-import { CreateAssessmentUseCase } from './application/use-cases/create-assessment.use-case';
-import { AssessmentsController } from './infrastructure/http/assessments.controller';
-
+import { AssessmentUseCase } from './application/use-cases/assessment.use-case';
+import { AssessmentsController } from './infrastructure/controller/assessments.controller';
+import { SubmissionsModule } from './submissions.module';
+import { QuestionsModule } from './questions.module';
 @Module({
-    imports: [TypeOrmModule.forFeature([AssessmentOrmEntity])],
-    controllers: [AssessmentsController],
+    imports: [
+        TypeOrmModule.forFeature([AssessmentOrmEntity, AssessmentQuestionOrmEntity]),
+        SubmissionsModule,
+        QuestionsModule
+    ],
+    controllers: [
+        AssessmentsController
+    ],
     providers: [
-        CreateAssessmentUseCase,
-        { provide: ASSESSMENT_REPOSITORY, useClass: AssessmentPostgresRepository },
+        AssessmentUseCase,
+        { provide: ASSESSMENT_REPOSITORY, useClass: AssessmentPostgresRepository }
     ],
 })
 export class AssessmentsModule { }

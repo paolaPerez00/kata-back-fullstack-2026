@@ -31,7 +31,6 @@ export class QuestionPostgresRepository implements QuestionRepositoryPort {
             allowedLanguages: question.allowedLanguages,
             points: question.points,
         });
-        console.log("saved question ", saved)
         return this.toDomain(saved);
     }
 
