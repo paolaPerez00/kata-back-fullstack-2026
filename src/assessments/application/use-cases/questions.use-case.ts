@@ -12,7 +12,7 @@ export class QuestionUseCase {
         @Inject(TEST_CASE_REPOSITORY) private readonly testCasePort: TestCaseRepositoryPort,
     ) { }
 
-    async saveQuestion(body: QuestionBody): Promise<Question> {
+    async saveQuestion(body: QuestionBody) {
         const { title, description, allowedLanguages, points, testCases } = body ?? ({} as QuestionBody);
         if (!title || !description || !Array.isArray(allowedLanguages) || allowedLanguages.length === 0 || typeof points !== 'number') {
             throw new BadRequestException('title, description, allowedLanguages and points are required');
@@ -23,15 +23,21 @@ export class QuestionUseCase {
         const question = new Question(randomUUID(), title, description, allowedLanguages, points);
         const saved = await this.questionPort.save(question);
 
+        const savedTestCases: TestCase[] = [];
         for (const tc of testCases) {
             const testCase = new TestCase(randomUUID(), saved.id, tc.input, tc.expectedOutput, tc.isHidden ?? false);
-            await this.testCasePort.save(testCase);
+            savedTestCases.push(await this.testCasePort.save(testCase));
         }
-        return saved;
+        // Quien crea la pregunta ve todos los casos, incluidos los ocultos.
+        return {
+            ...saved.toSummary(),
+            testCases: savedTestCases.map(({ id, input, expectedOutput, isHidden }) => ({ id, input, expectedOutput, isHidden })),
+        };
     }
 
-    findAllQuestions() {
-        return this.questionPort.findAll();
+    async findAllQuestions() {
+        const questions = await this.questionPort.findAll();
+        return questions.map((q) => q.toSummary());
     }
 
     async findQuestionById(id: string) {
@@ -41,6 +47,9 @@ export class QuestionUseCase {
         const testCases = await this.testCasePort.findByQuestionId(id);
         const visibleTestCases = testCases.filter((tc) => !tc.isHidden);
 
-        return { ...question, testCases: visibleTestCases };
+        return {
+            ...question.toSummary(),
+            testCases: visibleTestCases.map(({ id, input, expectedOutput }) => ({ id, input, expectedOutput })),
+        };
     }
 }

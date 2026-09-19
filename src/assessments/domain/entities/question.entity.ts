@@ -9,6 +9,16 @@ export class Question {
         public points: number,
         public testCaseIds: string[] = [],
     ) { }
+
+    toSummary() {
+        return {
+            id: this.id,
+            title: this.title,
+            description: this.description,
+            allowedLanguages: this.allowedLanguages,
+            points: this.points,
+        };
+    }
 }
 
 export interface TestCaseInput {

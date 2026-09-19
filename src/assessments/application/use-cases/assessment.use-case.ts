@@ -35,7 +35,13 @@ export class AssessmentUseCase {
         const questionIds = await this.assessmentPort.findQuestionIdsByAssessment(id);
         const questions = await this.questionPort.findByIds(questionIds);
 
-        return { ...assessment, questions };
+        return {
+            id: assessment.id,
+            name: assessment.name,
+            description: assessment.description,
+            durationMinutes: assessment.durationMinutes,
+            questions: questions.map((q) => q.toSummary()),
+        };
     }
 
     async addQuestionsToAssessment(assessmentId: string, questionIds: string[]) {
