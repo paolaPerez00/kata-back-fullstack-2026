@@ -5,8 +5,7 @@ import { ASSESSMENT_REPOSITORY, type AssessmentRepositoryPort } from '../../doma
 import { SUBMISSION_REPOSITORY, type SubmissionRepositoryPort } from '../../domain/ports/submission.repository.port';
 import { QUESTION_REPOSITORY, type QuestionRepositoryPort } from '../../domain/ports/question.repository.port';
 import { logOperation } from '../logging/operation-log';
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_PATTERN } from '../validation/code-input';
 
 @Injectable()
 export class AssessmentUseCase {

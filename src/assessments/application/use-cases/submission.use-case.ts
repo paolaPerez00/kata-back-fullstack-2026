@@ -1,11 +1,13 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { SUBMISSION_REPOSITORY, type SubmissionRepositoryPort } from '../../domain/ports/submission.repository.port';
 import { TEST_CASE_REPOSITORY, type TestCaseRepositoryPort } from '../../domain/ports/test-case.repository.port';
 import { QUESTION_REPOSITORY, type QuestionRepositoryPort } from '../../domain/ports/question.repository.port';
+import type { SupportedLanguage } from '../../domain/entities/question.entity';
 import { Submission, TestCaseResult } from '../../domain/entities/submission.entity';
 import { CODE_EXECUTOR, type CodeExecutorPort } from '../../domain/ports/code-executor.port';
 import { randomUUID } from 'crypto';
 import { logOperation } from '../logging/operation-log';
+import { assertValidCode, UUID_PATTERN } from '../validation/code-input';
 
 @Injectable()
 export class SubmissionUseCase {
@@ -20,14 +22,41 @@ export class SubmissionUseCase {
 
 
     async submitAnswer(assessmentId: string, questionId: string, code: string, language: string): Promise<Submission> {
-        return logOperation(this.logger, 'submitAnswer', { assessmentId, questionId, language }, async (log) => {
+        return logOperation(this.logger, 'submitAnswer', { assessmentId, questionId }, async (log) => {
+            if (typeof assessmentId !== 'string' || !assessmentId) throw new BadRequestException('assessmentId is required');
+            if (typeof questionId !== 'string' || !UUID_PATTERN.test(questionId)) throw new BadRequestException('questionId must be a valid uuid');
+            const isEmpty = assertValidCode(code);
+
             const question = await this.questionPort.findById(questionId);
             if (!question) throw new NotFoundException('Question not found');
+
+            if (!isEmpty) {
+                if (typeof language !== 'string' || !question.allowedLanguages.includes(language as SupportedLanguage)) {
+                    throw new BadRequestException(
+                        `language "${language}" is not allowed for this question. Allowed: ${question.allowedLanguages.join(', ')}`,
+                    );
+                }
+            } else if (typeof language !== 'string' || !language) {
+                language = question.allowedLanguages[0] ?? 'unknown';
+            }
+            log.language = language;
+            log.empty = isEmpty;
 
             const testCases = await this.testCasePort.findByQuestionId(questionId);
 
             const results: TestCaseResult[] = [];
             for (const tc of testCases) {
+                if (isEmpty) {
+                    results.push({
+                        testCaseId: tc.id,
+                        passed: false,
+                        actualOutput: '',
+                        expectedOutput: tc.expectedOutput,
+                        errorMessage: 'No code submitted',
+                    });
+                    continue;
+                }
+
                 const execResult = await this.executorPort.execute(code, language, tc.input);
                 const actualOutput = execResult.stdout.trim();
                 const passed = !execResult.timedOut && execResult.exitCode === 0 && actualOutput === tc.expectedOutput.trim();

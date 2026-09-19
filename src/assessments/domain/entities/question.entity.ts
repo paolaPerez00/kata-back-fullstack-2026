@@ -7,7 +7,6 @@ export class Question {
         public description: string,
         public allowedLanguages: SupportedLanguage[],
         public points: number,
-        public testCaseIds: string[] = [],
     ) { }
 
     toSummary() {

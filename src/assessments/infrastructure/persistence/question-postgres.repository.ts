@@ -19,7 +19,6 @@ export class QuestionPostgresRepository implements QuestionRepositoryPort {
             row.description,
             row.allowedLanguages as SupportedLanguage[],
             row.points,
-            row.testCases?.map((tc) => tc.id) ?? [],
         );
     }
 
@@ -35,17 +34,17 @@ export class QuestionPostgresRepository implements QuestionRepositoryPort {
     }
 
     async findById(id: string): Promise<Question | null> {
-        const row = await this.repo.findOne({ where: { id }, relations: { testCases: true } });
+        const row = await this.repo.findOneBy({ id });
         return row ? this.toDomain(row) : null;
     }
 
     async findAll(): Promise<Question[]> {
-        const rows = await this.repo.find({ relations: { testCases: true } });
+        const rows = await this.repo.find();
         return rows.map((r) => this.toDomain(r));
     }
 
     async findByIds(ids: string[]): Promise<Question[]> {
-        const rows = await this.repo.find({ where: { id: In(ids) }, relations: { testCases: true } });
+        const rows = await this.repo.find({ where: { id: In(ids) } });
         return rows.map((r) => this.toDomain(r));
     }
 }

@@ -4,6 +4,5 @@ export class Assessment {
         public name: string,
         public description: string,
         public durationMinutes: number,
-        public questionIds: string[] = [],
     ) { }
 }
