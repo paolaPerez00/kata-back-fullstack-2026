@@ -67,15 +67,15 @@ async function seed() {
 
   const q3 = await questionRepo.save({
     id: randomUUID(),
-    title: 'Palíndromo',
-    description: 'Dada una cadena de texto, indique si es palíndromo ("true" o "false").',
-    allowedLanguages: ['javascript', 'python'],
-    points: 20,
+    title: 'Doble de un número',
+    description: 'Dado un número entero, retorne el doble de ese número.',
+    allowedLanguages: ['javascript', 'python', 'java'],
+    points: 15,
   });
   await testCaseRepo.save([
-    { id: randomUUID(), questionId: q3.id, input: 'ana', expectedOutput: 'true', isHidden: false },
-    { id: randomUUID(), questionId: q3.id, input: 'hola', expectedOutput: 'false', isHidden: false },
-    { id: randomUUID(), questionId: q3.id, input: 'reconocer', expectedOutput: 'true', isHidden: true },
+    { id: randomUUID(), questionId: q3.id, input: '3', expectedOutput: '6', isHidden: false },
+    { id: randomUUID(), questionId: q3.id, input: '17', expectedOutput: '34', isHidden: false },
+    { id: randomUUID(), questionId: q3.id, input: '53', expectedOutput: '159', isHidden: true },
   ]);
 
   const q4 = await questionRepo.save({
@@ -120,15 +120,17 @@ async function seed() {
 
   const q7 = await questionRepo.save({
     id: randomUUID(),
-    title: 'Doble de un número',
-    description: 'Dado un número entero, retorne el doble de ese número.',
-    allowedLanguages: ['javascript', 'python', 'java'],
-    points: 15,
+    title: 'Contar dígitos',
+    description: 'Dado un número entero positivo, retorne la cantidad de dígitos que tiene.',
+    allowedLanguages: ['javascript', 'python'],
+    points: 25,
   });
+
   await testCaseRepo.save([
-    { id: randomUUID(), questionId: q7.id, input: '3', expectedOutput: '6', isHidden: false },
-    { id: randomUUID(), questionId: q7.id, input: '17', expectedOutput: '289', isHidden: false },
-    { id: randomUUID(), questionId: q7.id, input: '53', expectedOutput: '2809', isHidden: true },
+    { id: randomUUID(), questionId: q7.id, input: '5', expectedOutput: '1', isHidden: false },
+    { id: randomUUID(), questionId: q7.id, input: '123', expectedOutput: '3', isHidden: false },
+    { id: randomUUID(), questionId: q7.id, input: '98765', expectedOutput: '5', isHidden: true },
+    { id: randomUUID(), questionId: q7.id, input: '1000000', expectedOutput: '7', isHidden: true },
   ]);
 
   // ── Assessments ────────────────────────────────────────────
@@ -149,6 +151,14 @@ async function seed() {
     durationMinutes: 45,
   });
 
+  const assessmentBasic = await assessmentRepo.save({
+    id: randomUUID(),
+    name: 'Assessment Basic',
+    description: 'Evaluación de prueba para usar en la demo.',
+    durationMinutes: 5,
+  });
+
+
   console.log('🔗 Vinculando preguntas a assessments...');
 
   await assessmentQuestionRepo.save([
@@ -164,10 +174,16 @@ async function seed() {
     { id: randomUUID(), assessmentId: assessmentJava.id, questionId: q4.id, orderIndex: 1 },
   ]);
 
+  await assessmentQuestionRepo.save([
+    { id: randomUUID(), assessmentId: assessmentBasic.id, questionId: q2.id, orderIndex: 0 },
+    { id: randomUUID(), assessmentId: assessmentBasic.id, questionId: q3.id, orderIndex: 1 },
+    { id: randomUUID(), assessmentId: assessmentBasic.id, questionId: q6.id, orderIndex: 2 },
+  ]);
+
   console.log('✅ Seed completado');
   console.log(`   Assessment Full Stack Cloud: ${assessmentFullStack.id}`);
   console.log(`   Assessment Java: ${assessmentJava.id}`);
-  console.log(`   Preguntas creadas: ${[q1, q2, q3, q4, q5].map((q) => q.id).join(', ')}`);
+  console.log(`   Preguntas creadas: ${[q1, q2, q3, q4, q5, q6, q7].map((q) => q.id).join(', ')}`);
 
   await dataSource.destroy();
 }
