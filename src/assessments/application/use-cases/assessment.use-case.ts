@@ -6,6 +6,7 @@ import { SUBMISSION_REPOSITORY, type SubmissionRepositoryPort } from '../../doma
 import { QUESTION_REPOSITORY, type QuestionRepositoryPort } from '../../domain/ports/question.repository.port';
 import { logOperation } from '../logging/operation-log';
 import { UUID_PATTERN } from '../validation/code-input';
+import { roundTo } from '../../domain/rounding';
 
 @Injectable()
 export class AssessmentUseCase {
@@ -42,6 +43,7 @@ export class AssessmentUseCase {
 
     async findAssessmentById(id: string) {
         return logOperation(this.logger, 'findAssessmentById', { assessmentId: id }, async (log) => {
+            this.assertUuid(id, 'assessmentId');
             const assessment = await this.assessmentPort.findById(id);
             if (!assessment) throw new NotFoundException('Assessment not found');
 
@@ -62,12 +64,19 @@ export class AssessmentUseCase {
     async addQuestionsToAssessment(assessmentId: string, questionIds: string[]) {
         const requested = Array.isArray(questionIds) ? questionIds.length : undefined;
         return logOperation(this.logger, 'addQuestionsToAssessment', { assessmentId, questions: requested }, async () => {
+            this.assertUuid(assessmentId, 'assessmentId');
             const assessment = await this.assessmentPort.findById(assessmentId);
             if (!assessment) throw new NotFoundException('Assessment not found');
             await this.assertQuestionsExist(questionIds);
             await this.assessmentPort.linkQuestions(assessmentId, questionIds);
             return { assessmentId, questionIds };
         });
+    }
+
+    private assertUuid(value: string, field: string) {
+        if (typeof value !== 'string' || !UUID_PATTERN.test(value)) {
+            throw new BadRequestException(`${field} must be a valid uuid`);
+        }
     }
 
     private async assertQuestionsExist(questionIds: string[] = []) {
@@ -86,6 +95,10 @@ export class AssessmentUseCase {
 
     async getAssesmentResult(assessmentId: string) {
         return logOperation(this.logger, 'getAssesmentResult', { assessmentId }, async (log) => {
+            this.assertUuid(assessmentId, 'assessmentId');
+            const assessment = await this.assessmentPort.findById(assessmentId);
+            if (!assessment) throw new NotFoundException('Assessment not found');
+
             const all = await this.submissionPort.findByAssessmentId(assessmentId);
             const latest = new Map<string, (typeof all)[number]>();
             for (const s of all) {
@@ -94,7 +107,19 @@ export class AssessmentUseCase {
             }
             const submissions = [...latest.values()];
 
-            const totalScore = submissions.reduce((sum, s) => sum + s.score, 0);
+            const linkedIds = await this.assessmentPort.findQuestionIdsByAssessment(assessmentId);
+            const questionIds = [...new Set([...linkedIds, ...submissions.map((s) => s.questionId)])];
+            const questions = await this.questionPort.findByIds(questionIds);
+
+            const maxScore = questions.reduce((sum, q) => sum + q.points, 0);
+            const totalScore = roundTo(submissions.reduce((sum, s) => sum + s.score, 0));
+
+            const answered = submissions.filter((s) => s.code.trim() !== '');
+            const isFull = (s: (typeof answered)[number]) => s.results.length > 0 && s.results.every((r) => r.passed);
+            const correct = answered.filter(isFull);
+            const partial = answered.filter((s) => s.score > 0 && !isFull(s));
+            const incorrect = answered.filter((s) => s.score === 0);
+
             const totalTestCases = submissions.reduce((sum, s) => sum + s.results.length, 0);
             const totalPassed = submissions.reduce(
                 (sum, s) => sum + s.results.filter((r) => r.passed).length,
@@ -103,13 +128,19 @@ export class AssessmentUseCase {
 
             log.submissions = submissions.length;
             log.totalScore = totalScore;
+            log.maxScore = maxScore;
 
             return {
                 assessmentId,
                 totalScore,
-                totalQuestions: submissions.length,
-                correctAnswers: submissions.filter((s) => s.score > 0).length,
-                incorrectAnswers: submissions.filter((s) => s.score === 0).length,
+                maxScore,
+                scorePercentage: maxScore > 0 ? roundTo((totalScore / maxScore) * 100) : 0,
+                totalQuestions: questions.length,
+                answeredQuestions: answered.length,
+                unansweredQuestions: questions.length - answered.length,
+                correctAnswers: correct.length,
+                partialAnswers: partial.length,
+                incorrectAnswers: incorrect.length,
                 testCasesSummary: {
                     totalCases: totalTestCases,
                     passedCases: totalPassed,

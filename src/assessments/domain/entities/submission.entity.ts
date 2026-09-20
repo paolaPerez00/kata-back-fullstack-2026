@@ -1,3 +1,5 @@
+import { roundTo } from '../rounding';
+
 export type SubmissionStatus = 'pending' | 'graded' | 'error';
 
 export interface TestCaseResult {
@@ -24,7 +26,7 @@ export class Submission {
     grade(results: TestCaseResult[], pointsPerQuestion: number) {
         this.results = results;
         const passedCount = results.filter((r) => r.passed).length;
-        this.score = results.length > 0 ? (passedCount / results.length) * pointsPerQuestion : 0;
+        this.score = results.length > 0 ? roundTo((passedCount / results.length) * pointsPerQuestion) : 0;
         this.status = 'graded';
     }
 
