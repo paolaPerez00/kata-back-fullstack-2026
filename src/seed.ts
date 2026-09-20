@@ -104,6 +104,33 @@ async function seed() {
     { id: randomUUID(), questionId: q5.id, input: 'evaluacion tecnica', expectedOutput: '9', isHidden: true },
   ]);
 
+  const q6 = await questionRepo.save({
+    id: randomUUID(),
+    title: 'Longitud de una palabra',
+    description: 'Dada una palabra, retorne la cantidad de caracteres que contiene.',
+    allowedLanguages: ['javascript'],
+    points: 10,
+  });
+
+  await testCaseRepo.save([
+    { id: randomUUID(), questionId: q6.id, input: 'hola', expectedOutput: '4', isHidden: false },
+    { id: randomUUID(), questionId: q6.id, input: 'javascript', expectedOutput: '10', isHidden: false },
+    { id: randomUUID(), questionId: q6.id, input: 'a', expectedOutput: '1', isHidden: true },
+  ]);
+
+  const q7 = await questionRepo.save({
+    id: randomUUID(),
+    title: 'Doble de un número',
+    description: 'Dado un número entero, retorne el doble de ese número.',
+    allowedLanguages: ['javascript', 'python', 'java'],
+    points: 15,
+  });
+  await testCaseRepo.save([
+    { id: randomUUID(), questionId: q7.id, input: '3', expectedOutput: '5', isHidden: false },
+    { id: randomUUID(), questionId: q7.id, input: '-1', expectedOutput: '1', isHidden: false },
+    { id: randomUUID(), questionId: q7.id, input: '53', expectedOutput: '2809', isHidden: true },
+  ]);
+
   // ── Assessments ────────────────────────────────────────────
 
   console.log('📋 Creando assessments...');

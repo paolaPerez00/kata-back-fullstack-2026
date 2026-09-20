@@ -26,7 +26,7 @@ const LANG_CONFIG: Record<string, LangConfig> = {
     typescript: {
         image: 'node:24-alpine',
         fileName: 'main.ts',
-        runCmd: () => `sh -c "npx -y tsx main.ts"`,
+        runCmd: (f) => `node ${f}`,
     },
 };
 
