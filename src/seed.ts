@@ -126,8 +126,8 @@ async function seed() {
     points: 15,
   });
   await testCaseRepo.save([
-    { id: randomUUID(), questionId: q7.id, input: '3', expectedOutput: '5', isHidden: false },
-    { id: randomUUID(), questionId: q7.id, input: '-1', expectedOutput: '1', isHidden: false },
+    { id: randomUUID(), questionId: q7.id, input: '3', expectedOutput: '6', isHidden: false },
+    { id: randomUUID(), questionId: q7.id, input: '17', expectedOutput: '289', isHidden: false },
     { id: randomUUID(), questionId: q7.id, input: '53', expectedOutput: '2809', isHidden: true },
   ]);
 
