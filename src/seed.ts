@@ -183,6 +183,7 @@ async function seed() {
   console.log('✅ Seed completado');
   console.log(`   Assessment Full Stack Cloud: ${assessmentFullStack.id}`);
   console.log(`   Assessment Java: ${assessmentJava.id}`);
+  console.log(`   Assessment Basic: ${assessmentBasic.id}`);
   console.log(`   Preguntas creadas: ${[q1, q2, q3, q4, q5, q6, q7].map((q) => q.id).join(', ')}`);
 
   await dataSource.destroy();
